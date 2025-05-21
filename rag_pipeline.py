@@ -1,37 +1,37 @@
-# rag_pipeline.py
-
-import os
-from dotenv import load_dotenv
-from langchain.document_loaders import TextLoader
+# Imports - make sure these are updated to latest
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.llms import OpenAI
-from langchain.chains import RetrievalQA
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings  # or another embedding provider
+import os
 
-# Load environment variables from .env file (for OpenAI API key)
+# Optional: load environment variables (e.g., OPENAI_API_KEY)
+from dotenv import load_dotenv
 load_dotenv()
 
-# Step 1: Load your document(s)
-loader = TextLoader("data.txt")  # Make sure this file exists
-documents = loader.load()
+# Step 3: Load and chunk documents
+def load_docs(path):
+    documents = []
+    for filename in os.listdir(path):
+        if filename.endswith(".pdf"):
+            loader = PyPDFLoader(os.path.join(path, filename))
+            documents.extend(loader.load())
+        elif filename.endswith(".txt"):
+            loader = TextLoader(os.path.join(path, filename))
+            documents.extend(loader.load())
+    return documents
 
-# Step 2: Split the documents into chunks
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-docs = text_splitter.split_documents(documents)
+docs = load_docs("docs")
 
-# Step 3: Convert text chunks into embeddings and store in vector DB
-embeddings = OpenAIEmbeddings()
-vectorstore = FAISS.from_documents(docs, embeddings)
+# Split into chunks
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+chunks = splitter.split_documents(docs)
 
-# Step 4: Set up the retriever + LLM chain
-retriever = vectorstore.as_retriever()
-llm = OpenAI()  # Uses OPENAI_API_KEY from .env
-qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+# Step 4: Create embeddings
+embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Step 5: Ask a question
-query = "What is Retrieval-Augmented Generation?"
-answer = qa_chain.run(query)
+# Step 5: Create a FAISS vector store from chunks
+vectorstore = FAISS.from_documents(chunks, embeddings)
 
-print(f"Q: {query}")
-print(f"A: {answer}")
+# Continue with retrieval, querying, etc.
+
