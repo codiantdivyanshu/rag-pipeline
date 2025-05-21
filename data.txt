@@ -1,0 +1,1 @@
+Retrieval-Augmented Generation (RAG) is a method that combines document retrieval and language generation to answer questions based on a knowledge base.
