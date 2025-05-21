@@ -38,32 +38,36 @@ def create_vectorstore(chunks):
 def init_groq_client():
     return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Step 5: Query vectorstore and send to Groq LLM
-def ask_groq(query, vectorstore, client, k=3):
-    # Retrieve top k similar chunks
+# Step 5: Retrieve top k similar chunks from vectorstore
+def retrieve(query, vectorstore, k=3):
     retrieved_docs = vectorstore.similarity_search(query, k=k)
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-    
-    # Construct prompt
+    return [doc.page_content for doc in retrieved_docs]
+
+# Step 6: Generate answer using Groq LLM with context + query
+def generate(query, context, client):
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": f"Context:\n{context}"},
         {"role": "user", "content": f"Question:\n{query}"}
     ]
     
-    # Call LLaMA-3 via Groq
-    print("\nAnswer:\n")
     completion = client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
         temperature=0.7,
         max_tokens=512,
         top_p=1,
-        stream=True
+        stream=False  # Use False here to collect full answer at once
     )
     
-    for chunk in completion:
-        print(chunk.choices[0].delta.content or "", end="")
+    return completion.choices[0].message["content"]
+
+# Step 7: Full RAG pipeline: retrieve + generate answer
+def rag_pipeline(query, vectorstore, client, k=3):
+    context_chunks = retrieve(query, vectorstore, k)
+    context = "\n\n".join(context_chunks)
+    answer = generate(query, context, client)
+    return answer.strip()
 
 # Main logic
 if __name__ == "__main__":
@@ -78,6 +82,10 @@ if __name__ == "__main__":
 
     groq_client = init_groq_client()
 
-    # Example user query
-    query = input("\nEnter your question: ")
-    ask_groq(query, vectorstore, groq_client)
+    # Example user query loop
+    while True:
+        query = input("\nEnter your question (or 'exit' to quit): ")
+        if query.lower() == "exit":
+            break
+        answer = rag_pipeline(query, vectorstore, groq_client)
+        print("\nAnswer:\n", answer)
