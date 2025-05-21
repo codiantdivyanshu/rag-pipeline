@@ -1,93 +1,83 @@
-# Imports - make sure these are updated to latest
+# rag_pipeline.py
+
+import os
+from dotenv import load_dotenv
+
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from sentence_transformers import SentenceTransformer
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from groq import Groq
 
-import os
-
-# Optional: load environment variables (e.g., OPENAI_API_KEY)
-from dotenv import load_dotenv
+# Load environment variables (e.g., API keys)
 load_dotenv()
 
-# Step 3: Load and chunk documents
-def load_docs(path):
-    documents = []
-    for filename in os.listdir(path):
-        if filename.endswith(".pdf"):
-            loader = PyPDFLoader(os.path.join(path, filename))
-            documents.extend(loader.load())
-        elif filename.endswith(".txt"):
-            loader = TextLoader(os.path.join(path, filename))
-            documents.extend(loader.load())
-    return documents
+# Step 1: Load documents from a folder
+def load_documents(path):
+    docs = []
+    for file in os.listdir(path):
+        full_path = os.path.join(path, file)
+        if file.endswith(".pdf"):
+            docs.extend(PyPDFLoader(full_path).load())
+        elif file.endswith(".txt"):
+            docs.extend(TextLoader(full_path).load())
+    return docs
 
-docs = load_docs("docs")
+# Step 2: Split documents into chunks
+def split_documents(documents):
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    return splitter.split_documents(documents)
 
-# Split into chunks
-splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-chunks = splitter.split_documents(docs)
+# Step 3: Generate embeddings and build FAISS vectorstore
+def create_vectorstore(chunks):
+    embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+    vectorstore = FAISS.from_documents(chunks, embeddings)
+    return vectorstore
 
-# Step 4: Create embeddings
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-embeddings = embedding_model
+# Step 4: Initialize Groq LLM client
+def init_groq_client():
+    return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-
-# Step 5: Create a FAISS vector store from chunks
-vectorstore = FAISS.from_documents(chunks, embeddings)
-from groq import Groq
-from langchain_community.vectorstores import FAISS
-
-# Step 6: Query with Groq API (LLaMA-3)
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# Search FAISS index for relevant chunks
-query = "What is this document about?"
-retrieved_docs = vectorstore.similarity_search(query, k=3)
-retrieved_texts = [doc.page_content for doc in retrieved_docs]
-
-# Prepare context and prompt
-context = "\n\n".join(retrieved_texts)
-
-# Stream Groq LLM response
-completion = client.chat.completions.create(
-    model="llama3-70b-8192",  # Use correct model name from Groq
-    messages=[
+# Step 5: Query vectorstore and send to Groq LLM
+def ask_groq(query, vectorstore, client, k=3):
+    # Retrieve top k similar chunks
+    retrieved_docs = vectorstore.similarity_search(query, k=k)
+    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+    
+    # Construct prompt
+    messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": f"Context:\n{context}"},
         {"role": "user", "content": f"Question:\n{query}"}
-    ],
-    temperature=0.7,
-    max_tokens=512,
-    top_p=1,
-    stream=True
-)
+    ]
+    
+    # Call LLaMA-3 via Groq
+    print("\nAnswer:\n")
+    completion = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=512,
+        top_p=1,
+        stream=True
+    )
+    
+    for chunk in completion:
+        print(chunk.choices[0].delta.content or "", end="")
 
-# Print streamed response
-print("\n\nAnswer:\n")
-for chunk in completion:
-    print(chunk.choices[0].delta.content or "", end="")
+# Main logic
+if __name__ == "__main__":
+    docs = load_documents("docs")
+    print(f"Loaded {len(docs)} documents.")
 
+    chunks = split_documents(docs)
+    print(f"Split into {len(chunks)} chunks.")
 
-# Extract text content
-texts = [chunk.page_content for chunk in chunks]
+    vectorstore = create_vectorstore(chunks)
+    print("FAISS vector store created.")
 
-# Generate embeddings using local model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-embeddings = model.encode(texts, convert_to_numpy=True)
+    groq_client = init_groq_client()
 
-# Save FAISS index
-import faiss
-index = faiss.IndexFlatL2(embeddings.shape[1])
-index.add(embeddings)
-faiss.write_index(index, "vector_index.faiss")
-
-# Save texts
-import pickle
-with open("chunks.pkl", "wb") as f:
-    pickle.dump(texts, f)
-
-
+    # Example user query
+    query = input("\nEnter your question: ")
+    ask_groq(query, vectorstore, groq_client)
