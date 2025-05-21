@@ -1,1 +1,1 @@
-
+docs = load_docs("docs")
