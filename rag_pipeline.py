@@ -38,6 +38,39 @@ embeddings = embedding_model
 
 # Step 5: Create a FAISS vector store from chunks
 vectorstore = FAISS.from_documents(chunks, embeddings)
+from groq import Groq
+from langchain_community.vectorstores import FAISS
+
+# Step 6: Query with Groq API (LLaMA-3)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# Search FAISS index for relevant chunks
+query = "What is this document about?"
+retrieved_docs = vectorstore.similarity_search(query, k=3)
+retrieved_texts = [doc.page_content for doc in retrieved_docs]
+
+# Prepare context and prompt
+context = "\n\n".join(retrieved_texts)
+
+# Stream Groq LLM response
+completion = client.chat.completions.create(
+    model="llama3-70b-8192",  # Use correct model name from Groq
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"Context:\n{context}"},
+        {"role": "user", "content": f"Question:\n{query}"}
+    ],
+    temperature=0.7,
+    max_tokens=512,
+    top_p=1,
+    stream=True
+)
+
+# Print streamed response
+print("\n\nAnswer:\n")
+for chunk in completion:
+    print(chunk.choices[0].delta.content or "", end="")
+
 
 # Extract text content
 texts = [chunk.page_content for chunk in chunks]
