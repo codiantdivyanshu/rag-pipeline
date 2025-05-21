@@ -82,6 +82,11 @@ if __name__ == "__main__":
 
     groq_client = init_groq_client()
 
+    query = "What are the key points in the document?"
+    response = rag_pipeline(query, vectorstore, groq_client)
+    print("\nResponse:\n", response)
+    
+
     # Example user query loop
     while True:
         query = input("\nEnter your question (or 'exit' to quit): ")
