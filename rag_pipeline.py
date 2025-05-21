@@ -39,5 +39,22 @@ embeddings = embedding_model
 # Step 5: Create a FAISS vector store from chunks
 vectorstore = FAISS.from_documents(chunks, embeddings)
 
-# Continue with retrieval, querying, etc.
+# Extract text content
+texts = [chunk.page_content for chunk in chunks]
+
+# Generate embeddings using local model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+embeddings = model.encode(texts, convert_to_numpy=True)
+
+# Save FAISS index
+import faiss
+index = faiss.IndexFlatL2(embeddings.shape[1])
+index.add(embeddings)
+faiss.write_index(index, "vector_index.faiss")
+
+# Save texts
+import pickle
+with open("chunks.pkl", "wb") as f:
+    pickle.dump(texts, f)
+
 
