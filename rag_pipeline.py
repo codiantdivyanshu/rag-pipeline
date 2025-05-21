@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings  # Replacing OpenAI with local option
 from groq import Groq
 
-# Load environment variables (e.g., API keys)
+# Load environment variables
 load_dotenv()
 
 # Step 1: Load documents from a folder
@@ -30,7 +30,7 @@ def split_documents(documents):
 
 # Step 3: Generate embeddings and build FAISS vectorstore
 def create_vectorstore(chunks):
-    embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = FAISS.from_documents(chunks, embeddings)
     return vectorstore
 
@@ -57,7 +57,7 @@ def generate(query, context, client):
         temperature=0.7,
         max_tokens=512,
         top_p=1,
-        stream=False  # Use False here to collect full answer at once
+        stream=False
     )
     
     return completion.choices[0].message["content"]
@@ -85,9 +85,7 @@ if __name__ == "__main__":
     query = "What are the key points in the document?"
     response = rag_pipeline(query, vectorstore, groq_client)
     print("\nResponse:\n", response)
-    
 
-    # Example user query loop
     while True:
         query = input("\nEnter your question (or 'exit' to quit): ")
         if query.lower() == "exit":
