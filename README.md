@@ -26,12 +26,25 @@ It also includes a FastAPI backend for serving the RAG pipeline via REST API.
 - Torch + Numpy + Pandas
 
 📂 Folder Structure
+rag-pipeline/
+│
+├── docs/                      # Documentation or design assets
+│   └── architecture.md        # Example doc (add diagrams, notes, etc.)
+│
+├── data.txt                   # Sample input or notes (can be removed if unused)
+├── .env                       # Environment variables (e.g., GROQ_API_KEY)
+├── .gitignore                 # Git ignore rules
+├── LICENSE                    # License file (e.g., MIT)
+├── README.md                  # Project documentation
+├── requirements.txt           # Python dependencies
+│
+├── rag_pipeline.py            # Terminal-based pipeline script
+├── rag_api.py                 # Shared logic used by both CLI and FastAPI
+├── fast_api_app.py            # FastAPI server entry point
+│
+├── venv/                      # Python virtual environment (excluded from Git)
 
 
-
-
-
----
 
 🛠️ Installation
 
