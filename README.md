@@ -51,5 +51,41 @@ pip install -r requirements.txt
 
 4.Create a .env file and add your Groq API key:
 
-GROQ_API_KEY = 
+GROQ_API_KEY = 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
+
+ 
+:) Run Locally (Terminal)
+
+   python rag_pipeline.py 
+   
+ :) Run via FastAPI
+
+   uvicorn rag_api:app --reload
+
+   Visit: http://127.0.0.1:8000/docs for interactive Swagger UI.
+
+:) Endpoints
+
+POST /upload-pdf/ — Upload a PDF and generate embeddings
+
+POST /query/ — Submit a natural language question and receive an answer
+
+:) Dependencies 
+
+numpy
+torch
+pandas
+tqdm
+requests
+PyMuPDF
+sentence-transformers
+textwrap3
+groq
+fastapi
+uvicorn
+python-dotenv
+
+:) License
+ 
+ MIT License
 
