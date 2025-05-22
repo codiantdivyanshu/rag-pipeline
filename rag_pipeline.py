@@ -258,6 +258,6 @@ print("Cosine similarity between vector1 and vector2:", cosine_similarity(vector
 print("Cosine similarity between vector1 and vector3:", cosine_similarity(vector1, vector3))
 print("Cosine similarity between vector1 and vector4:", cosine_similarity(vector1, vector4))
 
-groq_api_key = os.getenv("GROQ_API_KEY")
+groq_api_key = os.getenv("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")
 client = Groq(api_key=groq_api_key)
 
