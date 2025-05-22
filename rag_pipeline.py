@@ -9,7 +9,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 
 from groq import Groq
-\
+
 load_dotenv()
 
 def split_documents(documents):
