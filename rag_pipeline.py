@@ -1,4 +1,4 @@
-# rag_pipeline.py (Option 2: Interactive Input)
+
 
 import os
 from dotenv import load_dotenv
@@ -8,8 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from groq import Groq
-
-# Load environment variables
+\
 load_dotenv()
 
 def split_documents(documents):
