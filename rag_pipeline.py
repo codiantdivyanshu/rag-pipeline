@@ -1,32 +1,34 @@
-
-
 import os
 from dotenv import load_dotenv
 
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-
+from langchain_cohere import CohereEmbeddings
 from groq import Groq
 
+
 load_dotenv()
+
 
 def split_documents(documents):
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     return splitter.split_documents(documents)
 
 def create_vectorstore(chunks):
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = CohereEmbeddings(cohere_api_key=os.getenv("COHERE_API_KEY"))
     vectorstore = FAISS.from_documents(chunks, embeddings)
     return vectorstore
+
 
 def init_groq_client():
     return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+
 def retrieve(query, vectorstore, k=3):
     retrieved_docs = vectorstore.similarity_search(query, k=k)
     return [doc.page_content for doc in retrieved_docs]
+
 
 def generate(query, context, client):
     messages = [
@@ -34,7 +36,7 @@ def generate(query, context, client):
         {"role": "user", "content": f"Context:\n{context}"},
         {"role": "user", "content": f"Question:\n{query}"}
     ]
-    
+
     completion = client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
@@ -43,8 +45,9 @@ def generate(query, context, client):
         top_p=1,
         stream=False
     )
-    
+
     return completion.choices[0].message["content"]
+
 
 def rag_pipeline(query, vectorstore, client, k=3):
     context_chunks = retrieve(query, vectorstore, k)
@@ -66,11 +69,10 @@ if __name__ == "__main__":
     print(f"Split into {len(chunks)} chunks.")
 
     vectorstore = create_vectorstore(chunks)
-    print("FAISS vector store created.")
+    print("FAISS vector store created using Cohere embeddings.")
 
     groq_client = init_groq_client()
 
-    # Optional: warm-up query
     query = "What are the key points in the document?"
     response = rag_pipeline(query, vectorstore, groq_client)
     print("\nResponse:\n", response)
