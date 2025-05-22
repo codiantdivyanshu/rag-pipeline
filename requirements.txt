@@ -1,6 +1,9 @@
-langchain>=0.1.0
-openai>=1.0.0
-faiss-cpu
-tiktoken
-unstructured
-python-dotenv
+numpy
+torch
+pandas
+tqdm
+requests
+PyMuPDF
+sentence-transformers
+textwrap3
+groq
