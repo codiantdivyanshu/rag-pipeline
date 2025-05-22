@@ -29,7 +29,7 @@ It also includes a FastAPI backend for serving the RAG pipeline via REST API.
 rag-pipeline/
 │
 ├── docs/                      # Documentation or design assets
-│   └── architecture.md        # Example doc (add diagrams, notes, etc.)
+│   └── file.pdf               # Example doc (add diagrams, notes, etc.)
 │
 ├── data.txt                   # Sample input or notes (can be removed if unused)
 ├── .env                       # Environment variables (e.g., GROQ_API_KEY)
