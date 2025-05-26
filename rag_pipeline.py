@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEVICE = "cpu"
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = os.getenv("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")
 
 model = SentenceTransformer("all-mpnet-base-v2", device=DEVICE)
 
