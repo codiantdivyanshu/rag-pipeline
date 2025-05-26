@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
 from sentence_transformers import SentenceTransformer
-from groq import Groq  # pip install groq
+from groq import Groq  
 from dotenv import load_dotenv
 
 load_dotenv()
