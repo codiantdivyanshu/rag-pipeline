@@ -50,7 +50,7 @@ rag-pipeline/
 
 1. Clone the repository:
 
-git clone https://github.com/your-username/rag-pipeline.git
+git clone https://github.com/codiantdivyanshu/rag-pipeline.git
 cd rag-pipeline
 
 2.Create and activate a virtual environment  
