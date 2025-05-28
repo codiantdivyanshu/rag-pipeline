@@ -31,7 +31,7 @@ def runn_query(request: QueryRequest):
 
 embeddings_csv = os.path.splittext(request.pdf_path)[0] + "_embeddings.csv"
 if not os.path.exists(embeddings_csv):
-    return {"error":"Embeddings not found. Please upload and process the PDF first."
+    return {"error":"Embeddings not found. Please upload and process the PDF first."}
 
     chunks , embeddings_tensor=load_embedings(emebddings_csv)
     answer, context = query_pipeline(request.query,chunks,embeddings_tensor)
