@@ -3,11 +3,11 @@ from pydantic import BaseModel
 import tempfile
 import shutil
 import torch
-from rag_pipeline import load_pdf, generate_embeddings, query_pipeline  # Ensure these exist
+from rag_pipeline import load_pdf, generate_embeddings, query_pipeline  
 
 app = FastAPI()
 
-# Global cache for embeddings to avoid reprocessing on every query
+
 pdf_cache = {
     "chunks": None,
     "tensor": None
@@ -24,11 +24,11 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     print(f"Saved uploaded file to {tmp_path}")
     
-    # Load and embed
+
     pages_and_chunks = load_pdf(tmp_path)
     tensor = generate_embeddings(pages_and_chunks)
 
-    # Save to cache
+
     pdf_cache["chunks"] = pages_and_chunks
     pdf_cache["tensor"] = tensor
 
