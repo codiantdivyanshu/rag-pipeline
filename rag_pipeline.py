@@ -78,5 +78,5 @@ answer , context = query_pipeline(query , pages_and_chunks< embdeeings_tensor)
 
 print("\nTop relevant context:\n")
 print_wrapped(context)
-print("\nAnswer:\n)
+print("\nAnswer:\n")
 print_wrapped(answer)          
