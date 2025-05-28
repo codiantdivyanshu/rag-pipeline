@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_KEY_INGEST = os.getenv("API_KEY_INGEST")
-API_KEY_QUERY = os.getenv("API_KEY_QUERY")
+API_KEY_INGEST = os.getenv("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")
+API_KEY_QUERY = os.getenv("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")
 
 DEVICE= "cpu"
 
@@ -79,9 +79,4 @@ answer , context = query_pipeline(query , pages_and_chunks< embdeeings_tensor)
 print("\nTop relevant context:\n")
 print_wrapped(context)
 print("\nAnswer:\n)
-print_wrapped(answer)
-      
-            
-                
-        
-                    
+print_wrapped(answer)          
