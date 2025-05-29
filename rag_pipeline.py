@@ -25,7 +25,7 @@ def extract_chunks(pdf_path):
     pages_and_chunks = []
     for page_number , page in enumerate(doc):
         text = text_formatter(page.get_text())
-        sentences = re.split(r'(?<=[.!?]+', text)
+        sentences = re.split(r'(?<=[.!?])+', text)
         for sentence in sentences:
             clean = sentence.strip()
             if len(clean) >30:
