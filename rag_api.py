@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from pydantic import BaseModel
+from typing import List
 import shutil
 import os
 import fitz
@@ -20,22 +21,25 @@ def merge_pdfs(pdf_paths, output_path):
     merged_doc.close()
 
 @app.post("/upload/")
-async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+async def upload(files: List[UploadFile] = File(...)):
     try:
         os.makedirs("./uploads", exist_ok=True)
+        uploaded_paths = []
 
-        file1_path = f"./uploads/{file1.filename}"
-        file2_path = f"./uploads/{file2.filename}"
+        for file in files:
+            file_path = f"./uploads/{file.filename}"
+            with open(file_path, "wb") as f:
+                shutil.copyfileobj(file.file, f)
+            uploaded_paths.append(file_path)
 
-        with open(file1_path, "wb") as f1, open(file2_path, "wb") as f2:
-            shutil.copyfileobj(file1.file, f1)
-            shutil.copyfileobj(file2.file, f2)
+        if not uploaded_paths:
+            raise HTTPException(status_code=400, detail="No files uploaded.")
 
         merged_pdf_path = "./uploads/merged.pdf"
-        merge_pdfs([file1_path, file2_path], merged_pdf_path)
+        merge_pdfs(uploaded_paths, merged_pdf_path)
 
         individual_results = []
-        for pdf_path in [file1_path, file2_path]:
+        for pdf_path in uploaded_paths:
             try:
                 chunks = extract_chunks(pdf_path)
                 embedded_chunks, _ = embed_chunks(chunks)
