@@ -5,11 +5,10 @@ import shutil
 import os
 import fitz
 from rag_pipeline import extract_chunks, embed_chunks, save_embeddings, load_embeddings, query_pipeline
-from routes import router
-from api.routes import router
+from routers import router as pdf_router
 
 app = FastAPI()
-app.include_router(router)
+app.include_router(pdf_router)
 
 class QueryRequest(BaseModel):
     query: str
@@ -102,3 +101,5 @@ def run_query(request: QueryRequest, source: str = Query("merged", description="
 @app.get("/")
 def root():
     return {"message": "RAG API is running"}
+
+
