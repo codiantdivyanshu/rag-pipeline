@@ -8,7 +8,7 @@ from rag_pipeline import extract_chunks, embed_chunks, save_embeddings, load_emb
 
 router = APIRouter()
 
-# Optional in-memory cache
+
 session_store = {
     "chunks": None,
     "embeddings_tensor": None
@@ -21,7 +21,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     Upload a PDF and generate embeddings.
     """
     try:
-        # Save uploaded file temporarily
+     
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(await file.read())
             temp_path = tmp_file.name
@@ -29,11 +29,10 @@ async def upload_pdf(file: UploadFile = File(...)):
         chunks = extract_chunks(temp_path)
         embedded_chunks, embeddings_tensor = embed_chunks(chunks)
 
-        # Save embeddings to CSV for later use
         save_path = f"embeddings_{os.path.basename(temp_path)}.csv"
         save_embeddings(embedded_chunks, save_path)
 
-        # Cache in memory
+
         session_store["chunks"] = chunks
         session_store["embeddings_tensor"] = embeddings_tensor
 
@@ -71,3 +70,4 @@ async def load_existing_embeddings(path: str = Form(...)):
         return {"message": f"Loaded embeddings from {path}"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
