@@ -1,0 +1,6 @@
+embedding_model: "all-mpnet-base-v2"
+device: "cpu"
+embedding_output_dir: "./uploads"
+merged_pdf_path: "./uploads/merged.pdf"
+top_k: 5
+llm_model: "llama3-8b-8192"
