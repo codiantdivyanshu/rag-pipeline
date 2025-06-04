@@ -9,12 +9,6 @@ from sentence_transformers import SentenceTransformer, util
 from groq import Groq
 from dotenv import load_dotenv
 from config.config_loader import load_config 
-from settings.base import AppSettings
-from logger.logger import get_logger 
-
-config = load_config()
-settings = AppSettings()
-logger = get_logger()
 
 load_dotenv()
 
