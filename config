@@ -1,0 +1,15 @@
+embedding_model: "all-mpnet-base-v2"
+device: "cpu"
+embedding_output_dir: "./uploads"
+merged_pdf_path: "./uploads/merged.pdf"
+top_k: 5
+llm_model: "llama3-8b-8192"
+
+
+config/config_loader.py 
+
+import yaml
+
+def load_config(path="config/default_config.yaml"):
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
