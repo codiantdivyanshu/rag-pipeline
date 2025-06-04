@@ -5,7 +5,7 @@ import shutil
 import os
 import fitz
 from rag_pipeline import extract_chunks, embed_chunks, save_embeddings, load_embeddings, query_pipeline
-from routes import router
+from .routes import router
 
 app = FastAPI(title="RAG PDF QA API")
 app.include_router(router)
