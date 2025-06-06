@@ -2,19 +2,18 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends, Re
 from pydantic import BaseModel
 from typing import List
 import os
-import fitz  # PyMuPDF
+import fitz  
 import shutil
 from rag_pipeline import extract_chunks, embed_chunks, save_embeddings, load_embeddings, query_pipeline
 from starlette.status import HTTP_403_FORBIDDEN
 from fastapi.openapi.utils import get_openapi
 
-# === API KEY AUTH ===
+
 API_KEY = "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"
 API_KEY_NAME = "access_token"
 
 app = FastAPI()
 
-# === API Key Validator ===
 async def get_api_key(request: Request):
     api_key = request.headers.get(API_KEY_NAME)
     if api_key != API_KEY:
@@ -24,11 +23,11 @@ async def get_api_key(request: Request):
         )
     return api_key
 
-# === MODELS ===
+
 class QueryRequest(BaseModel):
     query: str
 
-# === UPLOAD MULTIPLE PDFs AND MERGE ===
+
 @app.post("/upload/", dependencies=[Depends(get_api_key)])
 async def upload(file: List[UploadFile] = File(...)):
     try:
@@ -61,7 +60,6 @@ async def upload(file: List[UploadFile] = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-# === QUERY ===
 @app.post("/query/", dependencies=[Depends(get_api_key)])
 def run_query(request: QueryRequest, source: str = Query("merged", description="Specify 'merged' or filename")):
     try:
@@ -88,12 +86,11 @@ def run_query(request: QueryRequest, source: str = Query("merged", description="
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
-# === ROOT ===
 @app.get("/", dependencies=[Depends(get_api_key)])
 def root():
     return {"message": "RAG API is running"}
 
-# === CUSTOM OPENAPI ===
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
