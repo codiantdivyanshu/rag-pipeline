@@ -1,81 +1,70 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 from typing import List
-import shutil
 import os
-import fitz
+import fitz  # PyMuPDF
+import shutil
 from rag_pipeline import extract_chunks, embed_chunks, save_embeddings, load_embeddings, query_pipeline
-from routers import router as pdf_router
+from starlette.status import HTTP_403_FORBIDDEN
+
+
+API_KEY = "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"
+API_KEY_NAME = "access_token"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 app = FastAPI()
-app.include_router(pdf_router)
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header == API_KEY:
+        return api_key_header
+    raise HTTPException(
+        status_code=HTTP_403_FORBIDDEN,
+        detail="Could not validate credentials"
+    )
+
 
 class QueryRequest(BaseModel):
     query: str
 
-def merge_pdfs(pdf_paths, output_path):
-    merged_doc = fitz.open()
-    for path in pdf_paths:
-        doc = fitz.open(path)
-        merged_doc.insert_pdf(doc)
-        doc.close()
-    merged_doc.save(output_path)
-    merged_doc.close()
 
-@app.post("/upload/")
-async def upload(files: List[UploadFile] = File(...)):
+@app.post("/upload/", dependencies=[Depends(get_api_key)])
+async def upload(file: List[UploadFile] = File(...)):
     try:
-        os.makedirs("./uploads", exist_ok=True)
-        uploaded_paths = []
+        upload_folder = "./uploads"
+        os.makedirs(upload_folder, exist_ok=True)
+        merged_pdf_path = os.path.join(upload_folder, "merged.pdf")
 
-        for file in files:
-            file_path = f"./uploads/{file.filename}"
-            with open(file_path, "wb") as f:
-                shutil.copyfileobj(file.file, f)
-            uploaded_paths.append(file_path)
+        merged_doc = fitz.open()
 
-        if not uploaded_paths:
-            raise HTTPException(status_code=400, detail="No files uploaded.")
+        for fi in file:
+            content = await fi.read()
+            temp_path = os.path.join(upload_folder, fi.filename)
+            with open(temp_path, "wb") as f:
+                f.write(content)
 
-        merged_pdf_path = "./uploads/merged.pdf"
-        merge_pdfs(uploaded_paths, merged_pdf_path)
+            src_pdf = fitz.open(temp_path)
+            merged_doc.insert_pdf(src_pdf)
+            src_pdf.close()
+            os.remove(temp_path)
 
-        individual_results = []
-        for pdf_path in uploaded_paths:
-            try:
-                chunks = extract_chunks(pdf_path)
-                embedded_chunks, _ = embed_chunks(chunks)
-                save_embeddings(embedded_chunks, os.path.splitext(pdf_path)[0] + "_embeddings.csv")
-                individual_results.append({"file": os.path.basename(pdf_path), "result": "success"})
-            except Exception as e:
-                individual_results.append({"file": os.path.basename(pdf_path), "result": f"error: {str(e)}"})
+        merged_doc.save(merged_pdf_path)
+        merged_doc.close()
 
-        try:
-            chunks = extract_chunks(merged_pdf_path)
-            embedded_chunks, _ = embed_chunks(chunks)
-            save_embeddings(embedded_chunks, os.path.splitext(merged_pdf_path)[0] + "_embeddings.csv")
-            merged_result = {"file": os.path.basename(merged_pdf_path), "result": "success"}
-        except Exception as e:
-            merged_result = {"file": os.path.basename(merged_pdf_path), "result": f"error: {str(e)}"}
+        chunks = extract_chunks(merged_pdf_path)
+        embedded_chunks, _ = embed_chunks(chunks)
+        save_embeddings(embedded_chunks, os.path.splitext(merged_pdf_path)[0] + "_embeddings.csv")
 
-        return {
-            "message": "Upload and processing complete",
-            "individual_files": individual_results,
-            "merged_file": merged_result,
-            "merged_pdf_path": merged_pdf_path
-        }
-
+        return {"message": "PDFs merged and processed", "path": merged_pdf_path}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
-@app.post("/query/")
-def run_query(request: QueryRequest, source: str = Query("merged", description="Specify 'merged' or filename ")):
-    try:
-        if source == "merged":
-            pdf_path = "./uploads/merged.pdf"
-        else:
-            pdf_path = os.path.join("./uploads", os.path.basename(source))
 
+@app.post("/query/", dependencies=[Depends(get_api_key)])
+def run_query(request: QueryRequest, source: str = Query("merged", description="Specify 'merged' or filename")):
+    try:
+        pdf_path = os.path.join("./uploads", "merged.pdf" if source == "merged" else os.path.basename(source))
         if not os.path.exists(pdf_path):
             raise HTTPException(status_code=404, detail=f"PDF '{pdf_path}' not found")
 
@@ -98,8 +87,30 @@ def run_query(request: QueryRequest, source: str = Query("merged", description="
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
-@app.get("/")
+@app.get("/", dependencies=[Depends(get_api_key)])
 def root():
     return {"message": "RAG API is running"}
 
 
+from fastapi.openapi.utils import get_openapi
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="RAG API with API Key Auth",
+        version="1.0",
+        description="Upload PDFs and ask questions using secure RAG pipeline",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "APIKeyHeader": {
+            "type": "apiKey",
+            "in": "header",
+            "name": API_KEY_NAME
+        }
+    }
+    openapi_schema["security"] = [{"APIKeyHeader": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
