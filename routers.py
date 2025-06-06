@@ -70,4 +70,3 @@ async def load_existing_embeddings(path: str = Form(...)):
         return {"message": f"Loaded embeddings from {path}"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-
